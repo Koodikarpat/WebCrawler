@@ -30,7 +30,7 @@ class paaosa():
                     if tag['href'] not in self.urls and tag['href'] not in self.visited:
                         self.urls.append(tag['href'])
                         x = open("visit.txt", "a")
-                        x.write("%s\n"% tag['href'])
+                        x.write("%s\n"% self.visited)
                         x.close()
             self.visited.append(url)
             hinta = self.tutkija(url)
