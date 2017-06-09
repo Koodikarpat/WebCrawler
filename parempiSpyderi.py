@@ -8,11 +8,16 @@ class paaosa():
     visited = []
     loppuloop = 0
     seuraavasivu = ["https://www.verkkokauppa.com", "https://www.gigantti.fi"]
-    def spider(self, url, maxpages):
-
+    maxpages = 100
+    
+    def __init__(self, url, maxpages):
         self.urls = [url]
+        self.maxpages = maxpages
+        self.spider()
+    
+    def spider(self):
         htmltext = ""
-        while len(self.urls) > 0 and maxpages >= len(self.visited):
+        while len(self.urls) > 0 and self.maxpages >= len(self.visited):
             try:
                 htmltext = urllib.request.urlopen(self.urls[0]).read()
             except:
@@ -42,6 +47,7 @@ class paaosa():
             soup = BeautifulSoup(htmltext, "html.parser")
             hinta = soup.find("div", attrs={"class": "product-price-container"}) or soup.find('span', attrs={'itemprop':'price'})
             tuote = soup.find('h1', attrs={'class': 'product-title'})  or soup.find("span", attrs={"itemprop":"name"})
+            
             if hinta != None:
                 paragraphs = []
                 for x in hinta:
@@ -51,11 +57,9 @@ class paaosa():
                 print("Tuotteen hinta:", paragraphs)
                 print("Löydettyjä hintoja:", self.tuotteita)
             if tuote != None:
-
                 lause = []
                 for x in tuote:
                     lause.append(str(x))
-
                 print("Tuotteen nimi: ", lause)
 
         except urllib.error.HTTPError:
@@ -63,7 +67,8 @@ class paaosa():
         except IndexError:
             if self.loppuloop <= 10:
                 self.loppuloop += 1
-                self.spider(self.seuraavasivu.pop(0), 20000)
+                self.urls = [self.seuraavasivu.pop(0)]
+                self.spider()
                 return
             else:
                 return
@@ -72,9 +77,8 @@ class paaosa():
 def main():
     x = open("visit.txt", "w")
     x.close()
-    x = paaosa()
     sivu = sys.argv[1]
     maxpages = int(sys.argv[2])
-    x.spider(sivu, maxpages)
+    x = paaosa(sivu, maxpages)
 
 main()
