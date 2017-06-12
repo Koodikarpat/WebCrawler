@@ -24,6 +24,10 @@ class paaosa():
                 htmltext = urllib.request.urlopen(self.urls[0]).read()
             except:
                 pass
+            c = open("htmlaaa.txt", "a")
+            c.write("%s\n" % htmltext)
+            c.close()
+
             soup = BeautifulSoup(htmltext, "html.parser")
             url = self.urls[0]
             print(url)
@@ -74,6 +78,7 @@ class paaosa():
 
 def main():
     x = open("visit.txt", "w")
+    c = open("htmlaaa.txt", "w")
     x.close()
     sivu = sys.argv[1]
     maxpages = int(sys.argv[2])
