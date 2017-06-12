@@ -1,15 +1,17 @@
 from bs4 import BeautifulSoup
 spec_name = [ 'lisätiedot', 'tekniset tiedot', 'arvostelut', 'kuvaus', 'arvostelu' ]
 
-def product_check():
-    hei = '';
+def product_check(tulkkaaja, text):
+    if tulkkaaja.find('li', { 'class' : 'tab specs active'}) is not None:
+        print('Yes')
+    else:
+        print('No')
+
 
 def tulkkikoulu(html):
-    div = []
     tulkki = BeautifulSoup(html, "html.parser")
-    for stiff in tulkki.findAll('div'):
-        div.append(stiff)
-        print(stiff)
+    #tulkki.find("li", {"class": "tab specs active"})
+    product_check(tulkki, html)
 
 
 def main():
@@ -17,6 +19,7 @@ def main():
     with open('htmlaaa.txt') as filee:
         for line in filee:
             lines.append(line)
-    tulkkikoulu(lines[0])
+    for idea in lines:
+        tulkkikoulu(idea)
 
 main()
