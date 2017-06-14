@@ -11,49 +11,41 @@ import pymysql
 class paaosa():
     urls = []
     visited = []
-
-    def __init__(self, url, maxpages):
-        self.urls = [url]
-        self.maxpages = maxpages
+    def __init__(self):
+        self.urls = ["https://www.jimms.fi/", "https://www.verkkokauppa.com/", "https://www.gigantti.fi/"]
         self.spider()
 
     def spider(self):
         htmltext = ""
-        maara = 0
         #Otetaan seuraavassa luupissa ulos nykyiseltä urlilta kaikki html teksti
-        while len(self.urls) > 0 and self.maxpages >= len(self.visited):
+        while len(self.urls) > 0:
+            url = self.urls[0]
             try:
-                htmltext = urllib.request.urlopen(self.urls[0]).read()
-            except :
+                htmltext = urllib.request.urlopen(url).read()
+                self.kirjuria(htmltextia, url)
+            except:
                 pass
             #Nyt laitetaan se html parsinnan alaiseksi
             soup = BeautifulSoup(htmltext, "html.parser")
-            url = self.urls[0]
             htmltextia = htmltext.decode("utf-8", "ignore")
-            self.kirjuria(htmltextia, url)
             #tässä vaiheessa on tarkoitus kutsua uutta funktiota jossa otetaan SQL databaseen yhteys joka tallentaa
             #kaiken uuden tiedon muodossa (html, url, ID(jokaisella uniikki)
             print(url)
 
             print(len(self.urls))
             print("Visited: ", len(self.visited))
-            testaus = bool(re.findall("https://www.jimms.fi" "|" "https://www.verkkokauppa.com" "|" "https://www.gigantti.fi", url))
-            if maara <= 5:
-                if testaus is False:
-                    maara += 1
-                else:
-                    pass
-            else:
-                url = "https://www.verkkokauppa.com"
-                maara = 0
+
             for tag in soup.findAll('a', href=True):
                 tag['href'] = urllib.parse.urljoin(url, tag['href'])
-                if tag['href'] not in self.visited:
+                testaus = bool(re.findall("https://www.jimms.fi" "|" "https://www.verkkokauppa.com" "|" "https://www.gigantti.fi", tag['href']))
+                if tag['href'] not in self.visited and testaus is True:
                     if tag['href'] not in self.urls and tag['href'] not in self.visited:
                         self.urls.append(tag['href'])
                         #Tämä koodi parsii kaikki linkit html koodista ja laittaa ne urls listalle
                         #Tästä listasta otamme seuraavalla kerralla aina uuden urlin ja käymme sen läpi
                         #tämä toistuu kunnes netti sivu on käyty täysin läpi
+
+
             self.visited.append(url)
             self.urls.pop(0)
 
@@ -61,6 +53,12 @@ class paaosa():
         #kirjoittaa html tekstin sekä urlin tietokantaan
         htmltext = html
         urli = url
+
+        soup = BeautifulSoup(html, "html.parser")
+        for script in soup(['script', 'style']):
+            script.extract()
+        html = str(soup)
+
         conn = pymysql.connect(host='localhost', port=6969, database='SpiderLair', user='root', password='webcrawler', charset='utf8')
         cur = conn.cursor()
         kirjottaa = ("INSERT INTO hotomot"
@@ -82,8 +80,6 @@ class paaosa():
 
 
 def main():
-    sivu = sys.argv[1]
-    maxpages = int(sys.argv[2])
-    x = paaosa(sivu, maxpages)
+   x = paaosa()
 
 main()
