@@ -58,6 +58,7 @@ class paaosa():
             self.urls.pop(0)
 
     def kirjuria(self, html, url):
+        #kirjoittaa html tekstin sekä urlin tietokantaan
         htmltext = html
         urli = url
         conn = pymysql.connect(host='localhost', port=6969, database='SpiderLair', user='root', password='webcrawler', charset='utf8')
