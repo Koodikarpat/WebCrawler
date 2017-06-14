@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import pymysql
 
 product_details = ''
-url = 'gigantti.fi'
+url = 'verkkokauppa.com'
 fileloc = 'master.html'
 products = []
 filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt', 'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'N&auml;yt&ouml;t']
@@ -31,7 +31,7 @@ def case_replace(input, case):
     },
     'productfilter' : {
         'gigantti.fi' : ['3', 'ol', 'class', 'breadcrumbs S-1-1'],
-        'verkkokauppa.com' : ['3', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
+        'verkkokauppa.com' : ['1', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
         'systemastore.com' : ['2', 'div', 'class', 'navpath'],
         'jimms.fi' : ['2', 'ol', 'class', 'breadcrumb']
     }
@@ -60,8 +60,10 @@ def product_identifier(tulkkaaja):
     speficclass = stuff[int(float(settings[0]))].string.strip('\n')
     print(speficclass)
     if speficclass in filterlvl1:
-        product_details = speficclass + ' : '
-        product_specifier(tulkkaaja)
+        if speficclass is not filterlvl1[0] or speficclass is not filterlvl1[0]:
+            speficclass = filterlvl1[3]
+            product_details = speficclass + ' : '
+            product_specifier(tulkkaaja)
 
 def product_specifier(tulkkaaja):
     global product_details
@@ -98,7 +100,10 @@ def product_check(tulkkaaja):
 
 def main():
     lines = []
-    file = open(fileloc, encoding='utf-8')
+    try:
+        file = open(fileloc, encoding='utf-8')
+    except:
+        print('idc')
 
 #    for line in file:
 #        lines.append(line)
@@ -108,8 +113,6 @@ def main():
 #        product_check(tulkki)
     tulkki = BeautifulSoup(file, "html.parser")
     product_check(tulkki)
-
     for shit in products:
         print(shit)
-
 main()
