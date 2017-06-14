@@ -82,7 +82,6 @@ class paaosa():
 
 
 def main():
-    c = open("htmlaaa.txt", "w")
     sivu = sys.argv[1]
     maxpages = int(sys.argv[2])
     x = paaosa(sivu, maxpages)
