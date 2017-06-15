@@ -20,15 +20,15 @@ class paaosa():
             url = self.urls[0]
             try:
                 htmltext = urllib.request.urlopen(url).read()
+                soup = BeautifulSoup(htmltext, "html.parser")
+                htmltextia = htmltext.decode("utf-8", "ignore")
                 self.kirjuria(htmltextia, url)
             except:
                 pass
             #Nyt laitetaan se html parsinnan alaiseksi
-            soup = BeautifulSoup(htmltext, "html.parser")
-            htmltextia = htmltext.decode("utf-8", "ignore")
             #tässä vaiheessa on tarkoitus kutsua uutta funktiota jossa otetaan SQL databaseen yhteys joka tallentaa
-            #kaiken uuden tiedon muodossa (html, url, ID(jokaisella uniikki)
-            print(url)
+            #kaiken uuden tiedon muodossa (html, url, ID(jokaisea uniikki)
+
 
             print(len(self.urls))
             print("Visited: ", len(self.visited))
