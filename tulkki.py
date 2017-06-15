@@ -1,8 +1,9 @@
 from bs4 import BeautifulSoup
+import pymysql
 
-product_details = ''
-url = 'gigantti.fi'
-fileloc = 'htmlaaa.txt'
+url = 'jimms.fi'
+fileloc = 'jimms.txt'
+product_centre = {}
 products = []
 filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt',
               'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'Tietokonetarvikkeet',
@@ -10,8 +11,8 @@ filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt'
 filterlvl2 = ['Prosessorit','Näytönohjaimet','Muistit','Emolevyt',
               'Kiintolevyt / SSD-levyt','Kovalevyt','Prosessorit',
               'Emolevy','Näytönohjain','RAM-muisti','Sisäinen kiintolevy (SSD)',
-              'Sisäinen kiintolevy (SATA)','Prosessori','Jäähdytin','',
-              '','','','','','','','','','','']
+              'Sisäinen kiintolevy (SATA)','Prosessori','Jäähdytin','Kotelot',
+              'Jäähdytys','','','','','','','','','','']
 
 def case_replace(input, case):
     cases = {
@@ -43,8 +44,8 @@ def case_replace(input, case):
     'productfilter2' : {
         'gigantti.fi' : ['0', 'td', 'class', 'any-3-4 S-1-2'],
         'verkkokauppa.com' : ['2', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
-        'systemastore.com' : ['', '', '', ''],
-        'jimms.fi' : ['', '', '', '']
+        'systemastore.com' : ['5', 'div', 'class', 'nav_path'],
+        'jimms.fi' : ['2', 'li', 'itemprop', 'itemListElement']
     }
     }
     if case in cases:
@@ -75,7 +76,6 @@ def product_check(tulkkaaja):
 
 def product_identifier(tulkkaaja):
     components = [filterlvl1[0], filterlvl1[1], filterlvl1[6], filterlvl1[8]]
-    global product_details
     settings = case_replace(url, 'productfilter1')
     if url in 'jimms.fi':
         stuff = tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop' : 'name'})
@@ -88,22 +88,23 @@ def product_identifier(tulkkaaja):
             speficclass = filterlvl1[3]
         else:
             speficclass = filterlvl1[0]
-
-        product_details = speficclass + ' : '
+        product_centre['Tuoteluokka'] = str(speficclass)
         product_class_specifier(tulkkaaja)
 
 def product_class_specifier(tulkkaaja):
-    global product_details
     settings = case_replace(url, 'productfilter2')
     if(settings[0] not in 'NOT'):
-        item = tulkkaaja.find(settings[1], {settings[2], settings[3]}).contents[int(settings[0])].string
+        if url in 'jimms.fi':
+            item = tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop': 'name'})[int(settings[0])].contents[1].contents[1].string
+        else:
+            item = tulkkaaja.find(settings[1], {settings[2], settings[3]}).contents[int(settings[0])].string
         if(item in filterlvl2):
-            product_details = product_details + item.strip('\n') + ' : '
+            product_centre['Osaluokka'] = str(item)
             product_specifier(tulkkaaja)
 
 
 def product_specifier(tulkkaaja):
-    global product_details
+    global product_centre
     settings = case_replace(url, 'productnames')
     settings2 = case_replace(url, 'productprices')
     if url in 'gigantti.fi':
@@ -118,12 +119,18 @@ def product_specifier(tulkkaaja):
     elif url in 'jimms.fi':
         itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3], {settings[4]: settings[5]}).contents
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).contents
-    product_details = product_details + itemname[0].strip('\n') + ' : ' + itemprice[0].strip('\n')
-    if product_details not in products:
-        products.append(product_details)
+    product_centre['Nimi'] = str(itemname)
+    product_centre['Hinta'] = str(itemprice)
+    if product_centre not in products:
+        products.append(product_centre)
+        product_centre = {}
 
 def main():
 
+    connection = pymysql.connect(host='172.20.146.37', port=9696, database='crawldb', user='inspect', password='cookies')
+    cursor = connection.cursor()
+    cursor.close()
+    connection.close()
     lines = []
     file = open(fileloc, encoding='utf-8')
 
