@@ -4,8 +4,14 @@ product_details = ''
 url = 'gigantti.fi'
 fileloc = 'htmlaaa.txt'
 products = []
-filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt', 'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'Tietokonetarvikkeet', 'N&auml;yt&ouml;t']
-filterlvl2 = []
+filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt',
+              'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'Tietokonetarvikkeet',
+              'N&auml;yt&ouml;t', 'Kiintolevyt, SSD ja verkkotallennus (NAS)']
+filterlvl2 = ['Prosessorit','Näytönohjaimet','Muistit','Emolevyt',
+              'Kiintolevyt / SSD-levyt','Kovalevyt','Prosessorit',
+              'Emolevy','Näytönohjain','RAM-muisti','Sisäinen kiintolevy (SSD)',
+              'Sisäinen kiintolevy (SATA)','Prosessori','Jäähdytin','',
+              '','','','','','','','','','','']
 
 def case_replace(input, case):
     cases = {
@@ -28,11 +34,17 @@ def case_replace(input, case):
         'jimms.fi' : ['span', 'itemprop', 'price']
 
     },
-    'productfilter' : {
+    'productfilter1' : {
         'gigantti.fi' : ['3', 'ol', 'class', 'breadcrumbs S-1-1'],
         'verkkokauppa.com' : ['1', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
         'systemastore.com' : ['3', 'div', 'class', 'nav_path'],
         'jimms.fi' : ['0', 'li', 'itemprop', 'itemListElement']
+    },
+    'productfilter2' : {
+        'gigantti.fi' : ['0', 'td', 'class', 'any-3-4 S-1-2'],
+        'verkkokauppa.com' : ['2', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
+        'systemastore.com' : ['', '', '', ''],
+        'jimms.fi' : ['', '', '', '']
     }
     }
     if case in cases:
@@ -44,18 +56,27 @@ def case_replace(input, case):
                 return cases.get('productnames').get(input)
             elif case is 'productprices':
                 return cases.get('productprices').get(input)
-            elif case is 'productfilter':
-                return cases.get('productfilter').get(input)
+            elif case is 'productfilter1':
+                return cases.get('productfilter1').get(input)
+            elif case is 'productfilter2':
+                return cases.get('productfilter2').get(input)
         else:
             return ['NOT']
     else:
         return ['NOT']
 
 
+def product_check(tulkkaaja):
+    settings = case_replace(url, 'stores')
+    if(settings[0] != 'NOT'):
+        if tulkkaaja.find(settings[0], { settings[1] : settings[2]}) is not None:
+            product_identifier(tulkkaaja)
+
+
 def product_identifier(tulkkaaja):
-    components = [filterlvl1[0], filterlvl1[1], filterlvl1[6]]
+    components = [filterlvl1[0], filterlvl1[1], filterlvl1[6], filterlvl1[8]]
     global product_details
-    settings = case_replace(url, 'productfilter')
+    settings = case_replace(url, 'productfilter1')
     if url in 'jimms.fi':
         stuff = tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop' : 'name'})
         speficclass = stuff[1].contents[1].contents[1].string
@@ -69,7 +90,16 @@ def product_identifier(tulkkaaja):
             speficclass = filterlvl1[0]
 
         product_details = speficclass + ' : '
-        product_specifier(tulkkaaja)
+        product_class_specifier(tulkkaaja)
+
+def product_class_specifier(tulkkaaja):
+    global product_details
+    settings = case_replace(url, 'productfilter2')
+    if(settings[0] not in 'NOT'):
+        item = tulkkaaja.find(settings[1], {settings[2], settings[3]}).contents[int(settings[0])].string
+        if(item in filterlvl2):
+            product_details = product_details + item.strip('\n') + ' : '
+            product_specifier(tulkkaaja)
 
 
 def product_specifier(tulkkaaja):
@@ -90,17 +120,10 @@ def product_specifier(tulkkaaja):
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).contents
     product_details = product_details + itemname[0].strip('\n') + ' : ' + itemprice[0].strip('\n')
     if product_details not in products:
-        product_details
         products.append(product_details)
 
-def product_check(tulkkaaja):
-    settings = case_replace(url, 'stores')
-    if(settings[0] != 'NOT'):
-        if tulkkaaja.find(settings[0], { settings[1] : settings[2]}) is not None:
-            product_identifier(tulkkaaja)
-
-
 def main():
+
     lines = []
     file = open(fileloc, encoding='utf-8')
 
