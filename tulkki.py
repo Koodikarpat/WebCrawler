@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
 
 product_details = ''
-url = 'jimms.fi'
-fileloc = 'jimms.txt'
+url = 'gigantti.fi'
+fileloc = 'htmlaaa.txt'
 products = []
 filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt', 'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'Tietokonetarvikkeet', 'N&auml;yt&ouml;t']
 filterlvl2 = []
@@ -31,7 +31,7 @@ def case_replace(input, case):
     'productfilter' : {
         'gigantti.fi' : ['3', 'ol', 'class', 'breadcrumbs S-1-1'],
         'verkkokauppa.com' : ['1', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
-        'systemastore.com' : ['2', 'div', 'class', 'navpath'],
+        'systemastore.com' : ['3', 'div', 'class', 'nav_path'],
         'jimms.fi' : ['0', 'li', 'itemprop', 'itemListElement']
     }
     }
@@ -62,7 +62,6 @@ def product_identifier(tulkkaaja):
     else:
         stuff = tulkkaaja.find(settings[1], {settings[2]: settings[3]}).contents
         speficclass = stuff[int(float(settings[0]))].string
-
     if speficclass in filterlvl1:
         if speficclass not in components:
             speficclass = filterlvl1[3]
@@ -104,6 +103,7 @@ def product_check(tulkkaaja):
 def main():
     lines = []
     file = open(fileloc, encoding='utf-8')
+
     for line in file:
         lines.append(line)
 
@@ -113,4 +113,5 @@ def main():
 
     for product in products:
         print(product)
+
 main()
