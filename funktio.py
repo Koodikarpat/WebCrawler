@@ -25,14 +25,14 @@ def tallennin(x):
         }
 
         cur.execute(e,f)
-
+        #puuttuu tarkistin onko tuotetta.
     else:
         stmt = "SHOW TABLES LIKE (%s), (x[2]) "
         cursor.execute(stmt)
         result = cursor.fetchone()
 
         if result:
-            s = ("INSERT INTO (%s), (x[2]"
+            s = ("INSERT INTO (%s), (x[2])"
             "(hinta, url)"
             "VALUES(%(hinta)s, %(url)s");
         d = {
