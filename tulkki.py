@@ -1,10 +1,11 @@
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+from funktio import mysql_connector
 import pymysql
 import sys
 
 url_domain = 'www.verkkokauppa.com'
-url = 'https://www.verkkokauppa.com/fi/product/20380/gkvcs/Fractal-Design-Define-R5-Blackout-Edition-ATX-kotelo-ilman-v'
+url = 'https://www.verkkokauppa.com/fi/product/32458/dftrf/Seagate-Barracuda-2-TB-64-MB-7200-RPM-3-5-SATA-III-6-Gb-s-ko'
 file_loc = 'master.html'
 product_centre = {}
 products = []
@@ -60,8 +61,8 @@ def case_replace(input, case, productspecifier):
         ['Näyttö', 'Näytöt', 'Tietokoneen näyttö'],
         ['Hiiri', 'Hiiret'],
         ['Näppäimistö', 'Näppäimistöt'],
-        ['Näppäimistö + Hiiri', 'Näppäimistöt ja hiiret', 'Näppäimistö ja hiiri'],
-        ['Ulkoinen kiintolevy']
+        ['Näppäimistö+Hiiri', 'Näppäimistöt ja hiiret', 'Näppäimistö ja hiiri'],
+        ['Ulkoinen_kiintolevy']
     ]
     }
     if case in cases:
@@ -89,36 +90,36 @@ def case_replace(input, case, productspecifier):
     else:
         return ['NOT']
 
-
 def retvieve():
     global url_domain
     global url
+
     """
     file = open(file_loc, encoding='utf8')
     tulkki = BeautifulSoup(file, "html.parser")
     product_check(tulkki)
     """
-    integer = 0
     limit = 0
+    querying = True
     try:
         connection = pymysql.connect(host='172.20.146.37', port=9696, database='crawltietokanta', user='inspect',
                                      password='cookies')
     except exception:
         sys.exit(exception)
-    while integer <= 100:
+    while querying:
         cursor = connection.cursor()
         cursor.execute('SELECT * FROM crawltietokanta.table_url LIMIT %(import)s, 10', {'import' : limit})
         for stuff in cursor:
             url_domain = urlparse(stuff[2]).hostname
             url = stuff[2]
-            print(str(integer) + '. Checking...')
+            print(str(limit) + '. Checking...')
             url_domain = urlparse(stuff[2]).hostname
             tulkki = BeautifulSoup(stuff[1], "html.parser")
             product_check(tulkki)
-        integer = integer + 1
         limit = limit + 10
         cursor.close()
     connection.close()
+
 def product_check(tulkkaaja):
     global url_domain
     global url
@@ -130,7 +131,6 @@ def product_check(tulkkaaja):
             print('Not a product: ' + url)
     else:
         print('Domain incorrect: ' + url_domain)
-
 
 def product_identifier(tulkkaaja):
     global url_domain
@@ -169,7 +169,6 @@ def product_class_specifier(tulkkaaja):
         else:
             print('Not a component what we would want: ' + url)
 
-
 def product_specifier(tulkkaaja):
     global url_domain
     global url
@@ -177,11 +176,10 @@ def product_specifier(tulkkaaja):
     settings = case_replace(url_domain, 'productnames', 'nope')
     settings2 = case_replace(url_domain, 'productprices', 'nope')
     if url_domain in 'www.gigantti.fi':
-        itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).contents
-        itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).find(settings2[3]).contents
-        itemprice = itemprice[0]
+        itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).contents[0]
+        itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).find(settings2[3]).contents[0]
     elif url_domain in 'www.verkkokauppa.com':
-        itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).contents
+        itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).contents[0]
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).get('content')
     elif url_domain in 'www.systemastore.com':
         itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3], {settings[4]: settings[5]}).contents
@@ -193,24 +191,20 @@ def product_specifier(tulkkaaja):
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).contents
         itemprice = itemprice[0]
     try:
-        itemprice = itemprice.replace(r'\n', '').replace('n', '').replace('\\', '')
+        itemprice = itemprice.replace('\n', '')
+        itemprice = itemprice.replace('r\n', '')
+        itemprice = itemprice.replace('n', '')
+        itemprice = itemprice.replace('\\', '')
     except:
         pass
     product_centre['Nimi'] = itemname
     product_centre['Hinta'] = itemprice
     product_centre['URL'] = url
-    if product_centre not in products:
-        products.append(product_centre)
-        product_centre = {}
-        print('Product found!')
+    mysql_connector.tallennin(product_centre)
+    product_centre = {}
+    print('Product found!')
 
 def main():
     retvieve()
-
-    if len(products) is 0:
-        print('No products here!')
-    else:
-        for product in products:
-            print(product)
 
 main()
