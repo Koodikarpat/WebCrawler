@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
 from funktio import mysql_connector
-import pymysql
-import sys
+from urllib.parse import urlparse
+from multiprocessing import Process
+import pymysql, sys, time
 
 url_domain = 'www.verkkokauppa.com'
 url = 'https://www.verkkokauppa.com/fi/product/32458/dftrf/Seagate-Barracuda-2-TB-64-MB-7200-RPM-3-5-SATA-III-6-Gb-s-ko'
@@ -12,58 +12,70 @@ products = []
 filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt',
               'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'Tietokonetarvikkeet',
               'N&auml;yt&ouml;t', 'Kiintolevyt, SSD ja verkkotallennus (NAS)']
+isRunning = True
+stop = None
+
+
+def timer_process():
+    global stop
+    time.sleep(3.0)
+    print('Heading to DEATH!')
+    stop = True
+    print(stop)
+    print('hello')
 
 def case_replace(input, case, productspecifier):
     cases = {
-    'stores' : {
-        'www.gigantti.fi' : ['li', 'id', 'tab-specs'],
-        'www.verkkokauppa.com' : ['label', 'for', 'details-1'],
-        'www.systemastore.com' : ['div', 'id', 'teknisettiedot'],
-        'www.jimms.fi' : ['div', 'id', 'pinfo_propinfo']
-    },
-    'productnames' : {
-        'www.gigantti.fi' : ['h1', 'class', 'product-title'],
-        'www.verkkokauppa.com' : ['h1', 'class', 'heading-page product__name-title'],
-        'www.systemastore.com' : ['div', 'class', 'h1_title', 'span', 'itemprop', 'name'],
-        'www.jimms.fi' : ['h1', 'class', 'name', 'span', 'itemprop', 'name', 'brand']
-    },
-    'productprices' : {
-        'www.gigantti.fi' : ['div', 'class', 'product-price-container', 'span'],
-        'www.verkkokauppa.com' : ['span', 'class', 'price-tag-price__euros', 'content'],
-        'www.systemastore.com' : ['div', 'class', 'product_bar_specialpricetag', 'span'],
-        'www.jimms.fi' : ['span', 'itemprop', 'price']
+        'stores': {
+            'www.gigantti.fi': ['li', 'id', 'tab-specs'],
+            'www.verkkokauppa.com': ['label', 'for', 'details-1'],
+            'www.systemastore.com': ['div', 'id', 'teknisettiedot'],
+            'www.jimms.fi': ['div', 'id', 'pinfo_propinfo']
+        },
+        'productnames': {
+            'www.gigantti.fi': ['h1', 'class', 'product-title'],
+            'www.verkkokauppa.com': ['h1', 'class', 'heading-page product__name-title'],
+            'www.systemastore.com': ['div', 'class', 'h1_title', 'span', 'itemprop', 'name'],
+            'www.jimms.fi': ['h1', 'class', 'name', 'span', 'itemprop', 'name', 'brand']
+        },
+        'productprices': {
+            'www.gigantti.fi': ['div', 'class', 'product-price-container', 'span'],
+            'www.verkkokauppa.com': ['span', 'class', 'price-tag-price__euros', 'content'],
+            'www.systemastore.com': ['div', 'class', 'product_bar_specialpricetag', 'span'],
+            'www.jimms.fi': ['span', 'itemprop', 'price']
 
-    },
-    'productfilter1' : {
-        'www.gigantti.fi' : ['3', 'ol', 'class', 'breadcrumbs S-1-1'],
-        'www.verkkokauppa.com' : ['1', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
-        'www.systemastore.com' : ['3', 'div', 'class', 'nav_path'],
-        'www.jimms.fi' : ['0', 'li', 'itemprop', 'itemListElement']
-    },
-    'productfilter2' : {
-        'www.gigantti.fi' : ['0', 'td', 'class', 'any-3-4 S-1-2'],
-        'www.verkkokauppa.com' : ['2', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
-        'www.systemastore.com' : ['5', 'div', 'class', 'nav_path'],
-        'www.jimms.fi' : ['2', 'li', 'itemprop', 'itemListElement']
-    }
+        },
+        'productfilter1': {
+            'www.gigantti.fi': ['3', 'ol', 'class', 'breadcrumbs S-1-1'],
+            'www.verkkokauppa.com': ['1', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
+            'www.systemastore.com': ['3', 'div', 'class', 'nav_path'],
+            'www.jimms.fi': ['0', 'li', 'itemprop', 'itemListElement']
+        },
+        'productfilter2': {
+            'www.gigantti.fi': ['0', 'td', 'class', 'any-3-4 S-1-2'],
+            'www.verkkokauppa.com': ['2', 'ul', 'class', 'breadcrumbs-container__breadcrumbs'],
+            'www.systemastore.com': ['5', 'div', 'class', 'nav_path'],
+            'www.jimms.fi': ['2', 'li', 'itemprop', 'itemListElement']
+        }
     }
     filter2ext = {
-    'Komponentit' : [
-        ['Kotelo', 'Runko', 'Kotelot'],
-        ['Prosessori', 'Prosessorit', 'Prosessori'],
-        ['Kiintolevy' ,'Kiintolevyt / SSD-levyt', 'Sisäinen kiintolevy (SATA)', 'Sisäinen kiintolevy (SSD)', 'Kovalevyt'],
-        ['Emolevy', 'Emolevyt', 'Emolevy'],
-        ['Näytönohjain' ,'Näytönohjaimet', 'Näytönohjain'],
-        ['Muisti', 'RAM-muisti', 'Muistit'],
-        ['Virtalähde', 'Virtalähteet']
-    ],
-    'Oheislaitteet' : [
-        ['Näyttö', 'Näytöt', 'Tietokoneen näyttö'],
-        ['Hiiri', 'Hiiret'],
-        ['Näppäimistö', 'Näppäimistöt'],
-        ['Näppäimistö+Hiiri', 'Näppäimistöt ja hiiret', 'Näppäimistö ja hiiri'],
-        ['Ulkoinen_kiintolevy']
-    ]
+        'Komponentit': [
+            ['Kotelo', 'Runko', 'Kotelot'],
+            ['Prosessori', 'Prosessorit', 'Prosessori'],
+            ['Kiintolevy', 'Kiintolevyt / SSD-levyt', 'Sisäinen kiintolevy (SATA)', 'Sisäinen kiintolevy (SSD)',
+             'Kovalevyt'],
+            ['Emolevy', 'Emolevyt', 'Emolevy'],
+            ['Näytönohjain', 'Näytönohjaimet', 'Näytönohjain'],
+            ['Muisti', 'RAM-muisti', 'Muistit'],
+            ['Virtalähde', 'Virtalähteet']
+        ],
+        'Oheislaitteet': [
+            ['Näyttö', 'Näytöt', 'Tietokoneen näyttö'],
+            ['Hiiri', 'Hiiret'],
+            ['Näppäimistö', 'Näppäimistöt'],
+            ['Näppäimistö+Hiiri', 'Näppäimistöt ja hiiret', 'Näppäimistö ja hiiri'],
+            ['Ulkoinen_kiintolevy']
+        ]
     }
     if case in cases:
 
@@ -86,20 +98,20 @@ def case_replace(input, case, productspecifier):
                 if input in object:
                     return [object[0]]
             return ['NOT']
-        return['NOT']
+        return ['NOT']
     else:
         return ['NOT']
+
 
 def retvieve():
     global url_domain
     global url
-
     """
     file = open(file_loc, encoding='utf8')
     tulkki = BeautifulSoup(file, "html.parser")
     product_check(tulkki)
     """
-    limit = 0
+    limit = 100000000
     querying = True
     try:
         connection = pymysql.connect(host='172.20.146.37', port=9696, database='crawltietokanta', user='inspect',
@@ -108,7 +120,10 @@ def retvieve():
         sys.exit(exception)
     while querying:
         cursor = connection.cursor()
-        cursor.execute('SELECT * FROM crawltietokanta.table_url LIMIT %(import)s, 10', {'import' : limit})
+        procuss = Process(target=timer_process)
+        procuss.start()
+        cursor.execute('SELECT * FROM crawltietokanta.table_url LIMIT %(import)s, 10', {'import': limit})
+        procuss.terminate()
         for stuff in cursor:
             url_domain = urlparse(stuff[2]).hostname
             url = stuff[2]
@@ -120,17 +135,19 @@ def retvieve():
         cursor.close()
     connection.close()
 
+
 def product_check(tulkkaaja):
     global url_domain
     global url
     settings = case_replace(url_domain, 'stores', 'nope')
-    if(settings[0] != 'NOT'):
-        if tulkkaaja.find(settings[0], { settings[1] : settings[2]}) is not None:
+    if (settings[0] != 'NOT'):
+        if tulkkaaja.find(settings[0], {settings[1]: settings[2]}) is not None:
             product_identifier(tulkkaaja)
         else:
             print('Not a product: ' + url)
     else:
         print('Domain incorrect: ' + url_domain)
+
 
 def product_identifier(tulkkaaja):
     global url_domain
@@ -138,7 +155,7 @@ def product_identifier(tulkkaaja):
     components = [filterlvl1[0], filterlvl1[1], filterlvl1[6], filterlvl1[8]]
     settings = case_replace(url_domain, 'productfilter1', 'nope')
     if url_domain in 'www.jimms.fi':
-        stuff = tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop' : 'name'})
+        stuff = tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop': 'name'})
         speficclass = stuff[1].contents[1].contents[1].string
     else:
         stuff = tulkkaaja.find(settings[1], {settings[2]: settings[3]}).contents
@@ -153,13 +170,16 @@ def product_identifier(tulkkaaja):
     else:
         print('Not a component: ' + url)
 
+
 def product_class_specifier(tulkkaaja):
     global url_domain
     global url
     settings = case_replace(url_domain, 'productfilter2', 'nope')
-    if(settings[0] not in 'NOT'):
+    if (settings[0] not in 'NOT'):
         if url_domain in 'www.jimms.fi':
-            item = tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop': 'name'})[int(settings[0])].contents[1].contents[1].string
+            item = \
+            tulkkaaja.findAll(settings[1], {settings[2]: settings[3]}, {'itemprop': 'name'})[int(settings[0])].contents[
+                1].contents[1].string
         else:
             item = tulkkaaja.find(settings[1], {settings[2], settings[3]}).contents[int(settings[0])].string
         prodstuff = case_replace(str(item), '2filter', product_centre['Tuoteluokka'])
@@ -168,6 +188,7 @@ def product_class_specifier(tulkkaaja):
             product_specifier(tulkkaaja)
         else:
             print('Not a component what we would want: ' + url)
+
 
 def product_specifier(tulkkaaja):
     global url_domain
@@ -182,11 +203,14 @@ def product_specifier(tulkkaaja):
         itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).contents[0]
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).get('content')
     elif url_domain in 'www.systemastore.com':
-        itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3], {settings[4]: settings[5]}).contents
+        itemname = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3],
+                                                                                {settings[4]: settings[5]}).contents
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).find(settings2[3]).contents
     elif url_domain in 'www.jimms.fi':
-        itembrand = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3], {settings[4]: settings[6]}).contents
-        itemname1 = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3], {settings[4]: settings[5]}).contents
+        itembrand = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3],
+                                                                                 {settings[4]: settings[6]}).contents
+        itemname1 = tulkkaaja.find(settings[0], {settings[1]: settings[2]}).find(settings[3],
+                                                                                 {settings[4]: settings[5]}).contents
         itemname = itembrand[0] + ' ' + itemname1[0]
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).contents
         itemprice = itemprice[0]
@@ -205,6 +229,15 @@ def product_specifier(tulkkaaja):
     print('Product found!')
 
 def main():
-    retvieve()
+    global isRunning
+    global stop
+    process = Process(target=retvieve)
+    process.start()
+    while isRunning:
+        if stop:
+            isRunning = false
+            process.terminate()
 
-main()
+
+if __name__ == '__main__':
+    main()
