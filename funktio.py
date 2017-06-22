@@ -18,8 +18,8 @@ class mysql_connector:
         if underclass in "prosessori":
             tablename = productclass + '_' + processorproducer + '_' + underclass
             print(tablename)
-            s = "CREATE TABLE IF NOT EXISTS " + tablename + "(id INT auto_increment, nimi LONGTEXT, hinta LONGTEXT, url LONGTEXT, PRIMARY KEY (id));"\
-            "INSERT INTO " + tablename + "(nimi, hinta, url) VALUES ( '" + productname + "', '" + productprice + "', '" + producturl + "');"
+            s = "CREATE TABLE IF NOT EXISTS " + tablename + "(id INT auto_increment, nimi LONGTEXT, hinta FLOAT, url LONGTEXT, PRIMARY KEY (id));"\
+            "INSERT INTO " + tablename + "(nimi, hinta, url) VALUES ( '" + productname + "', " + productprice + ", '" + producturl + "');"
 
             cur.execute(s)
             conn.commit()
@@ -27,8 +27,8 @@ class mysql_connector:
         else:
             tablename = productclass + '_' + underclass
             print(tablename)
-            s = "CREATE TABLE IF NOT EXISTS " + tablename + "(id INT auto_increment, nimi LONGTEXT, hinta LONGTEXT, url LONGTEXT, PRIMARY KEY (id));"\
-            "INSERT INTO " + tablename + "(nimi, hinta, url) VALUES ( '" + productname + "', '" + productprice + "', '" + producturl + "');"
+            s = "CREATE TABLE IF NOT EXISTS " + tablename + "(id INT auto_increment, nimi LONGTEXT, hinta FLOAT, url LONGTEXT, PRIMARY KEY (id));"\
+            "INSERT INTO " + tablename + "(nimi, hinta, url) VALUES ( '" + productname + "', " + str(productprice) + ", '" + producturl + "');"
             cur.execute(s)
             conn.commit()
 

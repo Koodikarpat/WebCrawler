@@ -1,28 +1,22 @@
 from bs4 import BeautifulSoup
 from funktio import mysql_connector
 from urllib.parse import urlparse
-from multiprocessing import Process
+from multiprocessing import Process, Value
 import pymysql, sys, time
 
-url_domain = 'www.verkkokauppa.com'
-url = 'https://www.verkkokauppa.com/fi/product/32458/dftrf/Seagate-Barracuda-2-TB-64-MB-7200-RPM-3-5-SATA-III-6-Gb-s-ko'
+url_domain = ''
+url = ''
 file_loc = 'master.html'
 product_centre = {}
-products = []
 filterlvl1 = ['Komponentit', 'Tietokonekomponentit', 'Hiiret ja näppäimistöt',
               'Oheislaitteet' ,'Näytöt', 'PC Pelaaminen', 'Tietokonetarvikkeet',
               'N&auml;yt&ouml;t', 'Kiintolevyt, SSD ja verkkotallennus (NAS)']
-isRunning = True
-stop = None
 
 
-def timer_process():
-    global stop
-    time.sleep(3.0)
-    print('Heading to DEATH!')
-    stop = True
-    print(stop)
-    print('hello')
+def timer_process(timeout):
+    time.sleep(35.0)
+    timeout.value = 1
+
 
 def case_replace(input, case, productspecifier):
     cases = {
@@ -103,7 +97,7 @@ def case_replace(input, case, productspecifier):
         return ['NOT']
 
 
-def retvieve():
+def retvieve(timeout):
     global url_domain
     global url
     """
@@ -111,16 +105,16 @@ def retvieve():
     tulkki = BeautifulSoup(file, "html.parser")
     product_check(tulkki)
     """
-    limit = 100000000
+    limit = 0
     querying = True
     try:
         connection = pymysql.connect(host='172.20.146.37', port=9696, database='crawltietokanta', user='inspect',
                                      password='cookies')
-    except exception:
-        sys.exit(exception)
+    except:
+        sys.exit('Unable to connect to the MYSQL server.')
     while querying:
         cursor = connection.cursor()
-        procuss = Process(target=timer_process)
+        procuss = Process(target=timer_process, args=([timeout]))
         procuss.start()
         cursor.execute('SELECT * FROM crawltietokanta.table_url LIMIT %(import)s, 10', {'import': limit})
         procuss.terminate()
@@ -152,6 +146,7 @@ def product_check(tulkkaaja):
 def product_identifier(tulkkaaja):
     global url_domain
     global url
+    global product_centre
     components = [filterlvl1[0], filterlvl1[1], filterlvl1[6], filterlvl1[8]]
     settings = case_replace(url_domain, 'productfilter1', 'nope')
     if url_domain in 'www.jimms.fi':
@@ -174,6 +169,7 @@ def product_identifier(tulkkaaja):
 def product_class_specifier(tulkkaaja):
     global url_domain
     global url
+    global product_centre
     settings = case_replace(url_domain, 'productfilter2', 'nope')
     if (settings[0] not in 'NOT'):
         if url_domain in 'www.jimms.fi':
@@ -214,29 +210,28 @@ def product_specifier(tulkkaaja):
         itemname = itembrand[0] + ' ' + itemname1[0]
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).contents
         itemprice = itemprice[0]
-    try:
-        itemprice = itemprice.replace('\n', '')
-        itemprice = itemprice.replace('r\n', '')
-        itemprice = itemprice.replace('n', '')
-        itemprice = itemprice.replace('\\', '')
-    except:
-        pass
+    itemprice = itemprice.replace('\n', '')
+    itemprice = itemprice.replace('r\n', '')
+    itemprice = itemprice.replace('n', '')
+    itemprice = itemprice.replace('\\', '')
     product_centre['Nimi'] = itemname
-    product_centre['Hinta'] = itemprice
+    product_centre['Hinta'] = float(itemprice)
     product_centre['URL'] = url
     mysql_connector.tallennin(product_centre)
     product_centre = {}
     print('Product found!')
 
+
 def main():
-    global isRunning
-    global stop
-    process = Process(target=retvieve)
+    isRunning = True
+    stop = Value('b', 0)
+    process = Process(target=retvieve, args=([stop]))
     process.start()
     while isRunning:
-        if stop:
-            isRunning = false
+        if stop.value == 1:
+            isRunning = False
             process.terminate()
+            print('Program terminated due to timeout from MYSQL server.')
 
 
 if __name__ == '__main__':
