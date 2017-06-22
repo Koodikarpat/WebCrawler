@@ -210,6 +210,7 @@ def product_specifier(tulkkaaja):
         itemname = itembrand[0] + ' ' + itemname1[0]
         itemprice = tulkkaaja.find(settings2[0], {settings2[1]: settings2[2]}).contents
         itemprice = itemprice[0]
+    itemprice = itemprice.replace(',', '.')
     itemprice = itemprice.replace('\n', '')
     itemprice = itemprice.replace('r\n', '')
     itemprice = itemprice.replace('n', '')
