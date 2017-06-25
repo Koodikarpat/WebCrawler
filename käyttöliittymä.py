@@ -41,11 +41,11 @@ def class_component_specifier(_class, text):
 
 def retviever(query):
     tuotteita = []
-    products = mysql_connector.noutaja(preference1 + '_' + preference2)
+    products = mysql_connector.noutaja(query)
     for product in products:
         tuote = Tuote(product[0], product[1], product[2])
         tuotteita.append(tuote)
-        return tuotteita
+    return tuotteita
 
 
 def main():
