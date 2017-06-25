@@ -34,3 +34,17 @@ class mysql_connector:
 
         cur.close()
         conn.close()
+
+    def noutaja(y):
+
+        returnable = []
+        print(y)
+        conn = pymysql.connect(host='172.20.146.37', port=9696, database='crawltietokanta', user='inspect', password='cookies')
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM ' + y)
+        for stuff in cur:
+            idiom = [stuff[1], stuff[2], stuff[3]]
+            returnable.append(idiom)
+        cur.close()
+        conn.close()
+        return returnable
