@@ -14,8 +14,6 @@ class paaosa():
         self.spider()
 
     def spider(self):
-        htmltext = ""
-        #Otetaan seuraavassa luupissa ulos nykyiseltä urlilta kaikki html teksti
         while len(self.urls) > 0:
             url = self.urls[0]
             try:
@@ -25,12 +23,7 @@ class paaosa():
                 self.kirjuria(htmltextia, url)
             except:
                 pass
-            #Nyt laitetaan se html parsinnan alaiseksi
-            #tässä vaiheessa on tarkoitus kutsua uutta funktiota jossa otetaan SQL databaseen yhteys joka tallentaa
-            #kaiken uuden tiedon muodossa (html, url, ID(jokaisea uniikki)
 
-
-            print(len(self.urls))
             print("Visited: ", len(self.visited))
 
             for tag in soup.findAll('a', href=True):
@@ -39,10 +32,6 @@ class paaosa():
                 if tag['href'] not in self.visited and testaus is True:
                     if tag['href'] not in self.urls and tag['href'] not in self.visited:
                         self.urls.append(tag['href'])
-                        #Tämä koodi parsii kaikki linkit html koodista ja laittaa ne urls listalle
-                        #Tästä listasta otamme seuraavalla kerralla aina uuden urlin ja käymme sen läpi
-                        #tämä toistuu kunnes netti sivu on käyty täysin läpi
-
 
             self.visited.append(url)
             self.urls.pop(0)
@@ -53,7 +42,7 @@ class paaosa():
         for script in soup(['script', 'style']):
             script.extract()
         html = str(soup)
-        conn = pymysql.connect(host='localhost', port=6969, database='SpiderLair', user='root', password='webcrawler', charset='utf8')
+        conn = pymysql.connect(host='localhost', port='****', database='SpiderLair', user='****', password='*****', charset='utf8')
         cur = conn.cursor()
         kirjottaa = ("INSERT INTO hotomot"
                      "(html, url)"
